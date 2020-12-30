@@ -10,11 +10,15 @@ SOCKET Connection; // connection socket
 
 void ClientThread()
 {
-	char buffer[256];
+	int bufferLength; // Holds length of buffer
 	while (true)
 	{
-		recv(Connection, buffer, sizeof(buffer), NULL);
+		recv(Connection, (char*)&bufferLength, sizeof(int), NULL);//Recieve buffer length
+		char* buffer = new char[bufferLength+1]; //Allocate buffer
+		buffer[bufferLength] = '\0'; //Set last character of buffer to be null terminator so we arent printing info we dont want
+		recv(Connection, buffer, bufferLength, NULL);//Recieve buffer message from server
 		std::cout << buffer << std::endl;
+		delete[] buffer; //Deallocate buffer
 	}
 }
 
@@ -49,11 +53,13 @@ int main()
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientThread, NULL, NULL, NULL); //Create client Thread 
 
 
-	char buffer[256];
+	std::string buffer; // string buffer to send message
 	while (true)
 	{
-		std::cin.getline(buffer, sizeof(buffer));
-		send(Connection, buffer, sizeof(buffer), NULL);
+		std::getline(std::cin, buffer); //Get line if user presses enter and fill buffer
+		int bufferLength = buffer.length();
+		send(Connection, (char*)&bufferLength, sizeof(int), NULL); //Send length of buffer (message)
+		send(Connection, buffer.c_str(), bufferLength, NULL); //Send actual message (buffer)
 		Sleep(10);
 	}
 

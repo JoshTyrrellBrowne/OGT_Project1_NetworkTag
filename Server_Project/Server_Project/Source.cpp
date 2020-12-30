@@ -10,16 +10,22 @@ int ConnectionCounter = 0;
 
 void ClientHandlerThread(int index)
 {
-	char buffer[256];
+	int bufferLength; // Holds length of buffer
 	while (true)
 	{
-		recv(Connections[index], buffer, sizeof(buffer), NULL);
+		recv(Connections[index], (char*)&bufferLength, sizeof(int), NULL); // get buffer length
+		char* buffer = new char[bufferLength]; //Buffer to hold recieved message
+		recv(Connections[index], buffer, bufferLength, NULL); // Recieve message from client
+
+
 		for (int i = 0; i < ConnectionCounter; i++)
 		{
-			if (i == index)
+			if (i == index) // skip user who sent msg
 				continue;
-			send(Connections[i], buffer, sizeof(buffer), NULL);
+			send(Connections[i], (char*)&bufferLength, sizeof(int), NULL);// Send buffer length to client
+			send(Connections[i], buffer, bufferLength, NULL);// Send buffer message to same client
 		}
+		delete[] buffer;
 	}
 }
 
@@ -58,8 +64,10 @@ int main()
 		else // if client conection properly accepted
 		{
 			std::cout << "Client Connected!" << std::endl;
-			char MOTD[256] = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
-			send(newConnection, MOTD, sizeof(MOTD), NULL); //Send MOTD buffer
+			std::string MOTD = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
+			int MOTDLength = MOTD.size(); //Length of message
+			send(newConnection, (char*)&MOTDLength, sizeof(int), NULL); //Send MOTD buffer length
+			send(newConnection, MOTD.c_str(), MOTDLength, NULL); //Send MOTD buffer
 			Connections[i] = newConnection;
 			ConnectionCounter++;
 			CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandlerThread, (LPVOID)(i), NULL, NULL); //Create Thread to handle this client. The index in the socket array for this thread is the value (i).
