@@ -1,4 +1,7 @@
 //Client 
+// Author: Josh Tyrrell Browne
+
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #pragma comment(lib,"ws2_32.lib")
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
@@ -8,18 +11,45 @@
 
 SOCKET Connection; // connection socket
 
-void ClientThread()
+enum Packet
 {
-	int bufferLength; // Holds length of buffer
-	while (true)
+	P_ChatMessage
+};
+
+
+bool ProcessPacket(Packet packetType)
+{
+	switch (packetType)
 	{
+	case P_ChatMessage:
+	{
+		int bufferLength; // Holds length of buffer
 		recv(Connection, (char*)&bufferLength, sizeof(int), NULL);//Recieve buffer length
-		char* buffer = new char[bufferLength+1]; //Allocate buffer
+		char* buffer = new char[bufferLength + 1]; //Allocate buffer
 		buffer[bufferLength] = '\0'; //Set last character of buffer to be null terminator so we arent printing info we dont want
 		recv(Connection, buffer, bufferLength, NULL);//Recieve buffer message from server
 		std::cout << buffer << std::endl;
 		delete[] buffer; //Deallocate buffer
+		break;
 	}
+	default:
+		std::cout << "Unrecognised packet: " << packetType << std::endl;
+		break;
+	}
+	return true;
+}
+
+void ClientThread()
+{
+	Packet packetType;
+	while (true)
+	{
+		recv(Connection, (char*)&packetType, sizeof(Packet), NULL);//Recieve packet type
+
+		if (!ProcessPacket(packetType)) //if failed to process packet, break out
+			break;
+	}
+	closesocket(Connection); //close the socket that was being used for client connection
 }
 
 int main()
@@ -58,6 +88,8 @@ int main()
 	{
 		std::getline(std::cin, buffer); //Get line if user presses enter and fill buffer
 		int bufferLength = buffer.length();
+		Packet packetType = P_ChatMessage; //Create packet type: Chat message to be sent to server
+		send(Connection, (char*)&packetType, sizeof(Packet), NULL);// Send packet type
 		send(Connection, (char*)&bufferLength, sizeof(int), NULL); //Send length of buffer (message)
 		send(Connection, buffer.c_str(), bufferLength, NULL); //Send actual message (buffer)
 		Sleep(10);
