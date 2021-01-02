@@ -16,27 +16,86 @@ enum Packet
 	P_ChatMessage
 };
 
+bool SendInt(int ID, int t_int)
+{
+	int RetnCheck = send(Connections[ID], (char*)&t_int, sizeof(int), NULL); //send int
+	if (RetnCheck == SOCKET_ERROR) //If int failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: int successfully sent
+}
+
+bool GetInt(int ID, int& t_int)
+{
+	int RetnCheck = recv(Connections[ID], (char*)&t_int, sizeof(int), NULL); //recieve int
+	if (RetnCheck == SOCKET_ERROR) //If there is a connection issue 
+		return false; //Return false: did not recieve int
+	return true; //Return true: int successfully retrieved
+}
+
+bool SendPacketType(int ID, Packet t_packetType)
+{
+	int RetnCheck = send(Connections[ID], (char*)&t_packetType, sizeof(Packet), NULL); //send packet
+	if (RetnCheck == SOCKET_ERROR) //If packet failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: packet successfully sent
+}
+
+bool GetPacketType(int ID, Packet& t_packetType)
+{
+	int RetnCheck = recv(Connections[ID], (char*)&t_packetType, sizeof(Packet), NULL); //recieve packet
+	if (RetnCheck == SOCKET_ERROR) //If there is a connection issue 
+		return false; //Return false: did not recieve packet
+	return true; //Return true: packet successfully retrieved
+}
+
+bool SendString(int ID, std::string& _string)
+{
+	if (!SendPacketType(ID, P_ChatMessage)) //Send Packet type: Chat Message
+		return false; //Return false: Failed to send string
+	int bufferLength = _string.size(); //find string buffer length
+	if (!SendInt(ID, bufferLength)) //Send length of string, if sending buffer length failed,
+		return false; //failed to send string buffer length, return false
+	int RetnCheck = send(Connections[ID], _string.c_str(), bufferLength, NULL); //send string
+	if (RetnCheck == SOCKET_ERROR) //If packet failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: packet successfully sent
+}
+
+bool GetString(int ID, std::string& _string)
+{
+	int bufferLength; // Holds length of message
+	if (!GetInt(ID, bufferLength)) //Get length of buffer and store it: bufferLength
+		return false; //If get int fails, return false
+	char* buffer = new char[bufferLength + 1]; //Allocate buffer
+	buffer[bufferLength] = '\0'; // Set last char to null terminator so no junk
+	int RetnCheck = recv(Connections[ID], buffer, bufferLength, NULL); //receive message and store
+	_string = buffer; //set string to recieved buffer mesage
+	delete[] buffer; //deallocate buffer memory (cleanup to prevent memory leak)
+	if (RetnCheck == SOCKET_ERROR) //If connection is lost while getting message
+		return false; //If there is an issue with connection, return false
+	return true; //Return true if we were successful in retrieving the string
+}
+
 bool ProcessPacket(int ID, Packet packetType)
 {
 	switch (packetType)
 	{
 	case P_ChatMessage:
 	{
-		int bufferLength; // Holds length of buffer
-		recv(Connections[ID], (char*)&bufferLength, sizeof(int), NULL); // get buffer length
-		char* buffer = new char[bufferLength]; //Buffer to hold recieved message
-		recv(Connections[ID], buffer, bufferLength, NULL); // Recieve message from client
+		std::string message; //string to store our message we recieved
+		if (!GetString(ID, message)) //Get the chat message and store it in variable
+			return false; //If we dont properly get the chat message, return false
 
-		for (int i = 0; i < ConnectionCounter; i++)
+		for (int i = 0; i < ConnectionCounter; i++) // Next we need to send message to each user
 		{
-			if (i == ID) // skip user who sent msg
-				continue;
-			Packet chatMessagePacket = P_ChatMessage; //Create chat message packet to be sent
-			send(Connections[i], (char*)&chatMessagePacket, sizeof(Packet), NULL);// Send packet type
-			send(Connections[i], (char*)&bufferLength, sizeof(int), NULL);// Send buffer length to client
-			send(Connections[i], buffer, bufferLength, NULL);// Send buffer message to same client
+			if (i == ID) //If connection is user who sent the message
+				continue; //Skip to the next user, don't send message back to whom sent it
+			if (!SendString(i, message)) //Send message to connection at index i, if it fails to be sent...
+			{
+				std::cout << "Failed to send message from client ID: " << ID << " to client ID: " << i << std::endl;
+			}
 		}
-		delete[] buffer; //Deallocate buffer, stop memory leak
+		std::cout << "Processed chat message packet from user ID: " << ID << std::endl;
 		break;
 	}
 	default:
@@ -51,12 +110,12 @@ void ClientHandlerThread(int ID) //ID = the index in the SOCKET connetions array
 	Packet packetType;
 	while (true)
 	{
-		recv(Connections[ID], (char*)&packetType, sizeof(Packet), NULL); //Recieve packet type from client
-
+		if (!GetPacketType(ID, packetType)) //Get packet type
+			break; //If there is an issue getting the packet type, exit this loop
 		if (!ProcessPacket(ID, packetType)) //if packet not properly processed
 			break; // break out 
-
 	}
+	std::cout << "Lost connection to client ID: " << ID << std::endl;
 	closesocket(Connections[ID]); //close the socket that was being used for client connection
 }
 
@@ -98,12 +157,8 @@ int main()
 			Connections[i] = newConnection;
 			ConnectionCounter++;
 			CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandlerThread, (LPVOID)(i), NULL, NULL); //Create Thread to handle this client. The index in the socket array for this thread is the value (i).
-			Packet chatMessagePacket = P_ChatMessage; //Create chat message packet to be sent
-			send(Connections[i], (char*)&chatMessagePacket, sizeof(Packet), NULL);// Send packet type
 			std::string MOTD = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
-			int MOTDLength = MOTD.size(); //Length of message
-			send(newConnection, (char*)&MOTDLength, sizeof(int), NULL); //Send MOTD buffer length
-			send(newConnection, MOTD.c_str(), MOTDLength, NULL); //Send MOTD buffer
+			SendString(i, MOTD);
 		}
 	}
 

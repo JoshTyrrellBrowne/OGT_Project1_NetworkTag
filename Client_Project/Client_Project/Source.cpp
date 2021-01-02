@@ -10,26 +10,82 @@
 #include <iostream>
 
 SOCKET Connection; // connection socket
-
 enum Packet
 {
 	P_ChatMessage
 };
 
+bool SendInt(int t_int)
+{
+	int RetnCheck = send(Connection, (char*)&t_int, sizeof(int), NULL); //send int
+	if (RetnCheck == SOCKET_ERROR) //If int failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: int successfully sent
+}
+
+bool GetInt(int& t_int)
+{
+	int RetnCheck = recv(Connection, (char*)&t_int, sizeof(int), NULL); //recieve int
+	if (RetnCheck == SOCKET_ERROR) //If there is a connection issue 
+		return false; //Return false: did not recieve int
+	return true; //Return true: int successfully retrieved
+}
+
+bool SendPacketType(Packet t_packetType)
+{
+	int RetnCheck = send(Connection, (char*)&t_packetType, sizeof(int), NULL); //send packet
+	if (RetnCheck == SOCKET_ERROR) //If packet failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: packet successfully sent
+}
+
+bool GetPacketType(Packet & t_packetType)
+{
+	int RetnCheck = recv(Connection, (char*)&t_packetType, sizeof(int), NULL); //recieve packet
+	if (RetnCheck == SOCKET_ERROR) //If there is a connection issue 
+		return false; //Return false: did not recieve packet
+	return true; //Return true: packet successfully retrieved
+}
+
+bool SendString(std::string& _string)
+{
+	if (!SendPacketType(P_ChatMessage)) //Send Packet type: Chat Message
+		return false; //Return false: Failed to send string
+	int bufferLength = _string.size(); //find string buffer length
+	if (!SendInt(bufferLength)) //Send length of string, if sending buffer length failed,
+		return false; //failed to send string buffer length, return false
+	int RetnCheck = send(Connection, _string.c_str(), bufferLength, NULL); //send string
+	if (RetnCheck == SOCKET_ERROR) //If packet failed to send due to connection issue 
+		return false; //Return false: Connetion issue
+	return true; //Return true: packet successfully sent
+}
+
+bool GetString(std::string& _string)
+{
+	int bufferLength; // Holds length of message
+	if (!GetInt(bufferLength)) //Get length of buffer and store it: bufferLength
+		return false; //If get int fails, return false
+	char* buffer = new char[bufferLength + 1]; //Allocate buffer
+	buffer[bufferLength] = '\0'; // Set last char to null terminator so no junk
+	int RetnCheck = recv(Connection, buffer, bufferLength, NULL); //receive message and store
+	_string = buffer; //set string to recieved buffer mesage
+	delete[] buffer; //deallocate buffer memory (cleanup to prevent memory leak)
+	if (RetnCheck == SOCKET_ERROR) //If connection is lost while getting message
+		return false; //If there is an issue with connection, return false
+	return true; //Return true if we were successful in retrieving the string
+}
+
 
 bool ProcessPacket(Packet packetType)
 {
 	switch (packetType)
-	{
+	{ 
 	case P_ChatMessage:
 	{
-		int bufferLength; // Holds length of buffer
-		recv(Connection, (char*)&bufferLength, sizeof(int), NULL);//Recieve buffer length
-		char* buffer = new char[bufferLength + 1]; //Allocate buffer
-		buffer[bufferLength] = '\0'; //Set last character of buffer to be null terminator so we arent printing info we dont want
-		recv(Connection, buffer, bufferLength, NULL);//Recieve buffer message from server
-		std::cout << buffer << std::endl;
-		delete[] buffer; //Deallocate buffer
+		std::string message; //string to store our message we recieved
+		if (!GetString(message)) //Get chat message and store it in: message
+			return false; //If we do not properly get the chat message, return false
+		std::cout << message << std::endl; //Display the message to the user 
 		break;
 	}
 	default:
@@ -44,11 +100,13 @@ void ClientThread()
 	Packet packetType;
 	while (true)
 	{
-		recv(Connection, (char*)&packetType, sizeof(Packet), NULL);//Recieve packet type
-
+		//First get the packet type
+		if (!GetPacketType(packetType)) //get packet type
+			break; //If there is an issue getting the packet type, exit loop
 		if (!ProcessPacket(packetType)) //if failed to process packet, break out
-			break;
+			break; //break out of our client handler loop
 	}
+	std::cout << "Lost connection to the server." << std::endl;
 	closesocket(Connection); //close the socket that was being used for client connection
 }
 
@@ -83,15 +141,12 @@ int main()
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientThread, NULL, NULL, NULL); //Create client Thread 
 
 
-	std::string buffer; // string buffer to send message
+	std::string userInput; // string buffer to send message
 	while (true)
 	{
-		std::getline(std::cin, buffer); //Get line if user presses enter and fill buffer
-		int bufferLength = buffer.length();
-		Packet packetType = P_ChatMessage; //Create packet type: Chat message to be sent to server
-		send(Connection, (char*)&packetType, sizeof(Packet), NULL);// Send packet type
-		send(Connection, (char*)&bufferLength, sizeof(int), NULL); //Send length of buffer (message)
-		send(Connection, buffer.c_str(), bufferLength, NULL); //Send actual message (buffer)
+		std::getline(std::cin, userInput); //Get line if user presses enter and fill buffer
+		if (!SendString(userInput)) //send string: userInput
+			break;
 		Sleep(10);
 	}
 
