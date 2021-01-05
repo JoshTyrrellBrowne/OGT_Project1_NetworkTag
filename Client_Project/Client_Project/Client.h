@@ -42,7 +42,6 @@ private:
 	SOCKET Connection; // connection socket
 	SOCKADDR_IN addr; //Address to be binded to our Connection socket
 	int sizeOfAddr = sizeof(addr); //Need size of addr for connect function
-
 };
 
 static Client* clientptr;

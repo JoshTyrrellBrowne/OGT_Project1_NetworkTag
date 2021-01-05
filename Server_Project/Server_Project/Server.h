@@ -21,6 +21,9 @@ public:
 	bool ListenForNewConnection();
 
 private:
+	bool sendAll(int ID, char* data, int totalBytes);
+	bool recieveAll(int ID, char* data, int totalBytes);
+
 	bool SendInt(int ID, int t_int);
 	bool GetInt(int ID, int& t_int);
 

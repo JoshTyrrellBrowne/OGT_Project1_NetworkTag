@@ -61,6 +61,7 @@ bool Server::ListenForNewConnection()
 
 }
 
+
 bool Server::ProcessPacket(int ID, Packet packetType)
 {
 	switch (packetType)
