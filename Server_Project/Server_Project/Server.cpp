@@ -24,13 +24,13 @@ Server::Server(int PORT, bool BroadcastPublically) //Port = port to broadcast on
 	//Make socket listen
 	sListen = socket(AF_INET, SOCK_STREAM, NULL); //Create socket to listien for new connections
 	
-	if (bind(sListen, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR); //Bind the adrress to the socket
+	if (bind(sListen, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) //Bind the adrress to the socket
 	{
 		std::string ErrorMsg = "Failed to bind the address to our listening socket. Winsock Error: " + std::to_string(WSAGetLastError());
 		MessageBoxA(NULL, ErrorMsg.c_str(), "Error", MB_OK | MB_ICONERROR);
 		exit(1);
 	}
-	if (listen(sListen, SOMAXCONN) == SOCKET_ERROR); //Places sListen socket in a state in which it is listening for an incoming connection, **Note: SOMAXCONN= socket outstanding max connections(total amount of people that can try and connect at once)
+	if (listen(sListen, SOMAXCONN) == SOCKET_ERROR) //Places sListen socket in a state in which it is listening for an incoming connection, **Note: SOMAXCONN= socket outstanding max connections(total amount of people that can try and connect at once)
 	{
 		std::string ErrorMsg = "Failed to listen on listening socket. Winsock Error: " + std::to_string(WSAGetLastError());
 		MessageBoxA(NULL, ErrorMsg.c_str(), "Error", MB_OK | MB_ICONERROR);
