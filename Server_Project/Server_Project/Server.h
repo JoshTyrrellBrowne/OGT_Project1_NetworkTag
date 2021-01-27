@@ -8,10 +8,14 @@
 #include <tchar.h>
 #include <iostream>
 #include <string>
+#include "PacketManager.h"
+#include "PacketStructs.h"
+#include "PacketType.h"
 
-enum Packet
+struct Connection
 {
-	P_ChatMessage
+	SOCKET socket;
+	PacketManager packetManager; //Packet Manager for outgoing data for this connection
 };
 
 class Server
@@ -27,18 +31,19 @@ private:
 	bool SendInt(int ID, int t_int);
 	bool GetInt(int ID, int& t_int);
 
-	bool SendPacketType(int ID, Packet t_packetType);
-	bool GetPacketType(int ID, Packet& t_packetType);
+	bool SendPacketType(int ID, PacketType t_packetType);
+	bool GetPacketType(int ID, PacketType& t_packetType);
 
-	bool SendString(int ID, std::string& _string);
+	void SendString(int ID, std::string& _string);
 	bool GetString(int ID, std::string& _string);
 
-	bool ProcessPacket(int ID, Packet packetType);
+	bool ProcessPacket(int ID, PacketType packetType);
 
 	static void ClientHandlerThread(int ID);
+	static void PacketSenderThread(); //Thread for outgoing packets
 
 private:
-	SOCKET Connections[100];
+	Connection connections[100];
 	int ConnectionCounter = 0;
 
 	SOCKADDR_IN addr; // Address tthat we will bind our listening socket to

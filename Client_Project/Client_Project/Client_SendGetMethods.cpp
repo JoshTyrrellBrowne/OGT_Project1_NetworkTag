@@ -16,6 +16,7 @@ bool Client::sendAll(char* data, int totalBytes)
 
 bool Client::SendInt(int t_int)
 {
+	t_int = htonl(t_int); //Convert long from Host Byte Order to Network Byte Order
 	if (!sendAll((char*)&t_int, sizeof(int))) //If int failed to send due to connection issue 
 		return false; //Return false: Connetion issue, int not successfully sent
 	return true; //Return true: int successfully sent
@@ -39,26 +40,29 @@ bool Client::GetInt(int& t_int)
 {
 	if (!recieveAll((char*)&t_int, sizeof(int))) //Try to receive int, If there is a connection issue 
 		return false; //Return false: did not recieve int
+	t_int = ntohl(t_int); //Convert long from Network Byte Order to Host Byte Order
 	return true; //Return true: int successfully retrieved
 }
 
-bool Client::SendPacketType(Packet t_packetType)
+bool Client::SendPacketType(PacketType t_packetType)
 {
-	if (!sendAll((char*)&t_packetType, sizeof(Packet))) //If packettype failed to send due to connection issue 
+	if (!SendInt((int)t_packetType)) //If packettype failed to send due to connection issue 
 		return false; //Return false: Connetion issue, packettype not successfully sent
 	return true; //Return true: packettype successfully sent
 }
 
-bool Client::GetPacketType(Packet& t_packetType)
+bool Client::GetPacketType(PacketType& t_packetType)
 {
-	if (!recieveAll((char*)&t_packetType, sizeof(Packet))) //Try to receive packettype, If there is a connection issue 
+	int packetType;
+	if (!GetInt(packetType)) //Try to receive packettype, If there is a connection issue 
 		return false; //Return false: did not recieve packettype
+	t_packetType = (PacketType)packetType;
 	return true; //Return true: packettype successfully retrieved
 }
 
 bool Client::SendString(std::string& _string)
 {
-	if (!SendPacketType(P_ChatMessage)) //Send Packet type: Chat Message
+	if (!SendPacketType(PacketType::ChatMessage)) //Send Packet type: Chat Message
 		return false; //Return false: Failed to send string
 	int bufferLength = _string.size(); //find string buffer length
 	if (!SendInt(bufferLength)) //Send length of string, if sending buffer length failed,

@@ -8,7 +8,7 @@ Server::Server(int PORT, bool BroadcastPublically) //Port = port to broadcast on
 	if (WSAStartup(DllVersion, &wsaData) != 0) // If WSAStartup returns anything other than 0, means an error has occured in Winsock Startup
 	{
 		MessageBoxA(NULL, "Winsock startup failed", "Error", MB_OK | MB_ICONERROR);
-		exit(0);
+		exit(1);
 	}
 
 	// Setup socket address
@@ -37,6 +37,7 @@ Server::Server(int PORT, bool BroadcastPublically) //Port = port to broadcast on
 		exit(1);
 	}
 	serverPtr = this;
+	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)PacketSenderThread, NULL, NULL, NULL); //Create thread that will manage outgoing packets
 }
 
 bool Server::ListenForNewConnection()
@@ -50,8 +51,8 @@ bool Server::ListenForNewConnection()
 	}
 	else // if client conection properly accepted
 	{
-		std::cout << "Client Connected!" << std::endl;
-		Connections[ConnectionCounter] = newConnection;
+		std::cout << "Client Connected! ID:" << ConnectionCounter << std::endl;
+		connections[ConnectionCounter].socket = newConnection;
 		CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandlerThread, (LPVOID)(ConnectionCounter), NULL, NULL); //Create Thread to handle this client. The index in the socket array for this thread is the value (i).
 		std::string MOTD = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
 		SendString(ConnectionCounter, MOTD);
@@ -62,11 +63,11 @@ bool Server::ListenForNewConnection()
 }
 
 
-bool Server::ProcessPacket(int ID, Packet packetType)
+bool Server::ProcessPacket(int ID, PacketType packetType)
 {
 	switch (packetType)
 	{
-	case P_ChatMessage:
+	case PacketType::ChatMessage:
 	{
 		std::string message; //string to store our message we recieved
 		if (!GetString(ID, message)) //Get the chat message and store it in variable
@@ -76,16 +77,13 @@ bool Server::ProcessPacket(int ID, Packet packetType)
 		{
 			if (i == ID) //If connection is user who sent the message
 				continue; //Skip to the next user, don't send message back to whom sent it
-			if (!SendString(i, message)) //Send message to connection at index i, if it fails to be sent...
-			{
-				std::cout << "Failed to send message from client ID: " << ID << " to client ID: " << i << std::endl;
-			}
+			SendString(i, message); //send message to connection i
 		}
 		std::cout << "Processed chat message packet from user ID: " << ID << std::endl;
 		break;
 	}
 	default:
-		std::cout << "Unrecognised packet: " << packetType << std::endl;
+		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;
 	}
 	return true;
@@ -93,7 +91,7 @@ bool Server::ProcessPacket(int ID, Packet packetType)
 
 void Server::ClientHandlerThread(int ID) //ID = the index in the SOCKET connetions array
 {
-	Packet packetType;
+	PacketType packetType;
 	while (true)
 	{
 		if (!serverPtr->GetPacketType(ID, packetType)) //Get packet type
@@ -102,5 +100,25 @@ void Server::ClientHandlerThread(int ID) //ID = the index in the SOCKET connetio
 			break; // break out 
 	}
 	std::cout << "Lost connection to client ID: " << ID << std::endl;
-	closesocket(serverPtr->Connections[ID]); //close the socket that was being used for client connection
+	closesocket(serverPtr->connections[ID].socket); //close the socket that was being used for client connection
+}
+
+void Server::PacketSenderThread() //Thread for outgoing packets
+{
+	while (true)
+	{
+		for (int i = 0; i < serverPtr->ConnectionCounter; i++) //for each connection
+		{
+			if (serverPtr->connections[i].packetManager.HasPendingPackets())
+			{
+				Packet p = serverPtr->connections[i].packetManager.Retrieve(); //Retrieve a packet
+				if (!serverPtr->sendAll(i, p.buffer, p.size)) //send packet
+				{
+					std::cout << "Failed to send packet to ID: " << i << std::endl;
+				}
+				delete p.buffer;
+			}
+		}
+		Sleep(5);
+	}
 }

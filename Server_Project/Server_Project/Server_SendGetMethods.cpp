@@ -6,7 +6,7 @@ bool Server::sendAll(int ID, char* data, int totalBytes)
 	int bytesSent = 0; //Holds total bytes sent
 	while (bytesSent < totalBytes) // While we still have more bytes to send
 	{
-		int RetnCheck = send(Connections[ID], data + bytesSent, totalBytes - bytesSent, NULL); //try to send remaining bytes
+		int RetnCheck = send(connections[ID].socket, data + bytesSent, totalBytes - bytesSent, NULL); //try to send remaining bytes
 		if (RetnCheck == SOCKET_ERROR) //If there is a socket error while trying to send
 			return false; //Return false, failed to sendAll
 		bytesSent += RetnCheck;
@@ -19,7 +19,7 @@ bool Server::recieveAll(int ID, char* data, int totalBytes)
 	int bytesRecieved = 0; //Holds total bytes recieved
 	while (bytesRecieved < totalBytes) // While we still have more bytes to recieve
 	{
-		int RetnCheck = recv(Connections[ID], data + bytesRecieved, totalBytes - bytesRecieved, NULL); //try to recieve remaining bytes
+		int RetnCheck = recv(connections[ID].socket, data, totalBytes - bytesRecieved, NULL); //try to recieve remaining bytes
 		if (RetnCheck == SOCKET_ERROR) //If there is a socket error while trying to recieve
 			return false; //Return false, failed to recieveAll
 		bytesRecieved += RetnCheck; // Add to total bytes recieved
@@ -29,6 +29,7 @@ bool Server::recieveAll(int ID, char* data, int totalBytes)
 
 bool Server::SendInt(int ID, int t_int)
 {
+	t_int = htonl(t_int); //Convert long from Host Byte Order to Network Byte Order
 	if (!sendAll(ID, (char*)&t_int, sizeof(int))) //If int failed to send due to connection issue 
 		return false; //Return false: Connetion issue, int not successfully sent
 	return true; //Return true: int successfully sent
@@ -38,33 +39,30 @@ bool Server::GetInt(int ID, int& t_int)
 {
 	if (!recieveAll(ID, (char*)&t_int, sizeof(int))) //Try to receive int, If there is a connection issue 
 		return false; //Return false: did not recieve int
+	t_int = ntohl(t_int); //Convert long from Network Byte Order to Host Byte Order
 	return true; //Return true: int successfully retrieved
 }
 
-bool Server::SendPacketType(int ID, Packet t_packetType)
+bool Server::SendPacketType(int ID, PacketType t_packetType)
 {
-	if (!sendAll(ID, (char*)&t_packetType, sizeof(Packet))) //If packettype failed to send due to connection issue 
+	if (!SendInt(ID, (int)t_packetType)) //If packettype failed to send due to connection issue 
 		return false; //Return false: Connetion issue, packettype not successfully sent
 	return true; //Return true: packettype successfully sent
 }
 
-bool Server::GetPacketType(int ID, Packet& t_packetType)
+bool Server::GetPacketType(int ID, PacketType& t_packetType)
 {
-	if (!recieveAll(ID, (char*)&t_packetType, sizeof(Packet))) //Try to receive packettype, If there is a connection issue 
+	int packetType;
+	if (!GetInt(ID, packetType)) //Try to receive packettype, If there is a connection issue 
 		return false; //Return false: did not recieve packettype
+	t_packetType = (PacketType)packetType;
 	return true; //Return true: packettype successfully retrieved
 }
 
-bool Server::SendString(int ID, std::string& _string)
+void Server::SendString(int ID, std::string& _string)
 {
-	if (!SendPacketType(ID, P_ChatMessage)) //Send Packet type: Chat Message
-		return false; //Return false: Failed to send string
-	int bufferLength = _string.size(); //find string buffer length
-	if (!SendInt(ID, bufferLength)) //Send length of string, if sending buffer length failed,
-		return false; //failed to send string buffer length, return false
-	if (!sendAll(ID, (char*)_string.c_str(), bufferLength)) //If packet failed to send due to connection issue 
-		return false; //Return false: Connetion issue
-	return true; //Return true: packet successfully sent
+	PacketStructs::ChatMessage message(_string);
+	connections[ID].packetManager.Append(message.toPacket());
 }
 
 bool Server::GetString(int ID, std::string& _string)

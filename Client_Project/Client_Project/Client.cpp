@@ -37,11 +37,11 @@ bool Client::CloseConnection()
 	return false;
 }
 
-bool Client::ProcessPacket(Packet packetType)
+bool Client::ProcessPacket(PacketType packetType)
 {
 	switch (packetType)
 	{
-	case P_ChatMessage:
+	case PacketType::ChatMessage:
 	{
 		std::string message; //string to store our message we recieved
 		if (!GetString(message)) //Get chat message and store it in: message
@@ -50,7 +50,7 @@ bool Client::ProcessPacket(Packet packetType)
 		break;
 	}
 	default:
-		std::cout << "Unrecognised packet: " << packetType << std::endl;
+		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;
 	}
 	return true;
@@ -58,7 +58,7 @@ bool Client::ProcessPacket(Packet packetType)
 
 void Client::ClientThread()
 {
-	Packet packetType;
+	PacketType packetType;
 	while (true)
 	{
 		//First get the packet type
