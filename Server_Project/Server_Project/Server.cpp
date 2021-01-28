@@ -56,6 +56,7 @@ bool Server::ListenForNewConnection()
 		CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandlerThread, (LPVOID)(ConnectionCounter), NULL, NULL); //Create Thread to handle this client. The index in the socket array for this thread is the value (i).
 		std::string MOTD = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
 		SendString(ConnectionCounter, MOTD);
+		SendID(ConnectionCounter, ConnectionCounter); //Send this player its ID 
 		ConnectionCounter++;
 		return true;
 	}

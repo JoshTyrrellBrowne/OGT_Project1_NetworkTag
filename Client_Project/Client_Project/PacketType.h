@@ -2,5 +2,7 @@
 
 enum class PacketType
 {
-	ChatMessage
+	ChatMessage,
+	SetID,
+	SetPosition
 };

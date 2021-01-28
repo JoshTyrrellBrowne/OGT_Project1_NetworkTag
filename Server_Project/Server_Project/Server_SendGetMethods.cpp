@@ -83,3 +83,9 @@ bool Server::GetString(int ID, std::string& _string)
 	delete[] buffer; //deallocate buffer memory (cleanup to prevent memory leak)
 	return true; //Return true if we were successful in retrieving the string
 }
+
+void Server::SendID(int ID, int t_playerID)
+{
+	PacketStructs::SetID setID(t_playerID);
+	connections[ID].packetManager.Append(setID.toPacket());
+}

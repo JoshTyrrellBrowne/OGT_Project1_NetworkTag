@@ -22,8 +22,9 @@
 
 int main()
 {
-	Client myClient("127.0.0.1", 1111); //Create client to localhost ("127.0.0.1")
 	Game m_game;
+	Client myClient("127.0.0.1", 1111, m_game); //Create client to localhost ("127.0.0.1")
+	
 
 
 	if (!myClient.Connect())

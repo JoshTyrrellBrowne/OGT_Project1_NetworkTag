@@ -90,3 +90,18 @@ bool Client::GetString(std::string& _string)
 	delete[] buffer; //deallocate buffer memory (cleanup to prevent memory leak)
 	return true; //Return true if we were successful in retrieving the string
 }
+
+bool Client::GetPosition(sf::Vector2f& t_pos)
+{
+	float xPos;
+	if (!recieveAll((char*)&xPos, sizeof(float))) //Try to receive float, If there is a connection issue 
+		return false; //Return false: did not recieve float
+	xPos = ntohl(xPos); //Convert long from Network Byte Order to Host Byte Order
+	float yPos;
+	if (!recieveAll((char*)&yPos, sizeof(float))) //Try to receive float, If there is a connection issue 
+		return false; //Return false: did not recieve float
+	yPos = ntohl(yPos); //Convert long from Network Byte Order to Host Byte Order
+	t_pos.x = xPos;
+	t_pos.y = yPos;
+	return true; //Return true: int successfully retrieved
+}

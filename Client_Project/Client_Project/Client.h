@@ -4,6 +4,7 @@
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #pragma comment(lib,"ws2_32.lib")
+#include "Game.h"
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
 #include <tchar.h>
@@ -14,7 +15,7 @@
 class Client
 {
 public:
-	Client(std::string IP, int PORT);
+	Client(std::string IP, int PORT, Game& game);
 	bool Connect();
 	bool CloseConnection();
 	bool SendString(std::string& string);
@@ -32,11 +33,14 @@ private:
 	bool GetInt(int& t_int);
 	bool GetPacketType(PacketType& packetType);
 	bool GetString(std::string& string);
+	bool GetPosition(sf::Vector2f& t_pos);
 
 private:
 	SOCKET Connection; // connection socket
 	SOCKADDR_IN addr; //Address to be binded to our Connection socket
 	int sizeOfAddr = sizeof(addr); //Need size of addr for connect function
+	
+	Game* m_gamePtr;
 };
 
 static Client* clientptr;

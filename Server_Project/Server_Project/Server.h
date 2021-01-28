@@ -42,6 +42,8 @@ private:
 	static void ClientHandlerThread(int ID);
 	static void PacketSenderThread(); //Thread for outgoing packets
 
+	void SendID(int ID, int t_playerID);
+
 private:
 	Connection connections[100];
 	int ConnectionCounter = 0;

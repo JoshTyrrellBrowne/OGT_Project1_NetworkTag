@@ -1,7 +1,8 @@
 #include "Client.h"
 
-Client::Client(std::string IP, int PORT)
+Client::Client(std::string IP, int PORT, Game& game)
 {
+	m_gamePtr = &game;
 	//Winsock Startup
 	WSAData wsaData;
 	WORD DllVersion = MAKEWORD(2, 1);
@@ -49,6 +50,26 @@ bool Client::ProcessPacket(PacketType packetType)
 		std::cout << message << std::endl; //Display the message to the user 
 		break;
 	}
+	case PacketType::SetID:
+	{
+		int ID; //string to store our message we recieved
+		if (!GetInt(ID)) //Get chat id and store it in: id
+			return false; //If we do not properly get the id, return false
+		m_gamePtr->setUpWithID(ID); //setID
+		std::cout << "ID set!   ID: " << ID << std::endl; //Display the message to the user 
+		break;
+	}
+	case PacketType::SetPosition:
+	{
+		int ID; //store id of player to set pos
+		if (!GetInt(ID)) //Get chat id and store it in: id
+			return false; //If we do not properly get the id, return false
+		sf::Vector2f pos; // the position
+		if (!GetPosition(pos)) //Get chat id and store it in: id
+			return false; //If we do not properly get the id, return false
+		m_gamePtr->setPosition(pos);
+	}
+
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;
