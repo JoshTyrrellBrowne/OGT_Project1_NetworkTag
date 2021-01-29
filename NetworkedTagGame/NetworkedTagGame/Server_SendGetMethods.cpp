@@ -89,3 +89,31 @@ void Server::SendID(int ID, int t_playerID)
 	PacketStructs::SetID setID(t_playerID);
 	connections[ID].packetManager.Append(setID.toPacket());
 }
+
+bool Server::GetFloat(int ID, float& t_float)
+{
+	if (!recieveAll(ID, (char*)&t_float, sizeof(float))) //Try to receive int, If there is a connection issue 
+		return false; //Return false: did not recieve int
+	t_float = ntohl(t_float); //Convert long from Network Byte Order to Host Byte Order
+	return true; //Return true: int successfully retrieved
+}
+
+bool Server::GetPosition(int ID, float& xPos, float& yPos)
+{
+	//GetInt(ID, playerID);
+
+	if (!recieveAll(ID, (char*)&xPos, sizeof(float))) //Try to receive float, If there is a connection issue 
+		return false; //Return false: did not recieve float
+	xPos = ntohl(xPos); //Convert long from Network Byte Order to Host Byte Order
+
+	if (!recieveAll(ID, (char*)&yPos, sizeof(float))) //Try to receive float, If there is a connection issue 
+		return false; //Return false: did not recieve float
+	yPos = ntohl(yPos); //Convert long from Network Byte Order to Host Byte Order
+	return true; //Return true: int successfully retrieved
+}
+
+void Server::SendPosition(int ID,int playerID, float xPos, float yPos)
+{
+	PacketStructs::SetPosition setPos(playerID, xPos, yPos);
+	connections[ID].packetManager.Append(setPos.toPacket());
+}

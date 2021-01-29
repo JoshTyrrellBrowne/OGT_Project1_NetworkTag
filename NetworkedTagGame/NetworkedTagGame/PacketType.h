@@ -6,3 +6,4 @@ enum class PacketType
 	SetID,
 	SetPosition
 };
+

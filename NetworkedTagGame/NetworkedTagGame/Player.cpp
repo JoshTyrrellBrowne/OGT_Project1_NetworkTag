@@ -3,6 +3,12 @@
 Player::Player()
 {
 	isTagged = false;
+	m_circle.setRadius(200);
+}
+
+void Player::setPosition(sf::Vector2f t_pos)
+{
+	m_circle.setPosition(t_pos);
 }
 
 void Player::tag()

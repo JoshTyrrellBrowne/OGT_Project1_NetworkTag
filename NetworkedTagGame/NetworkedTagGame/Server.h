@@ -7,6 +7,7 @@
 #include <Ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
+#include <thread>
 #include <string>
 #include "PacketManager.h"
 #include "PacketStructs.h"
@@ -21,10 +22,11 @@ struct Connection
 class Server
 {
 public:
+	SOCKET newConnection;
 	Server(int PORT, bool BroadcastPublically = false);
 	bool ListenForNewConnection();
+	//static void ListenForNewConnectionThread();
 
-private:
 	bool sendAll(int ID, char* data, int totalBytes);
 	bool recieveAll(int ID, char* data, int totalBytes);
 
@@ -43,8 +45,12 @@ private:
 	static void PacketSenderThread(); //Thread for outgoing packets
 
 	void SendID(int ID, int t_playerID);
+	bool GetFloat(int ID, float& t_float);
+	bool GetPosition(int ID, float& xPos, float& yPos);
+	void SendPosition(int ID, int playerID, float xPos, float yPos);
 
 private:
+	int i = 3;
 	Connection connections[100];
 	int ConnectionCounter = 0;
 

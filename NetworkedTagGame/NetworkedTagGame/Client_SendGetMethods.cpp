@@ -56,6 +56,7 @@ bool Client::GetPacketType(PacketType& t_packetType)
 	int packetType;
 	if (!GetInt(packetType)) //Try to receive packettype, If there is a connection issue 
 		return false; //Return false: did not recieve packettype
+	//packetType = ntohl(packetType);
 	t_packetType = (PacketType)packetType;
 	return true; //Return true: packettype successfully retrieved
 }

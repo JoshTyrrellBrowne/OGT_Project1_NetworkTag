@@ -38,6 +38,8 @@ Server::Server(int PORT, bool BroadcastPublically) //Port = port to broadcast on
 	}
 	serverPtr = this;
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)PacketSenderThread, NULL, NULL, NULL); //Create thread that will manage outgoing packets
+	//std::thread listenForNewConnectionsThread(ListenForNewConnection, std::ref(*this));
+//CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ListenForNewConnectionThread, NULL, NULL, NULL);
 }
 
 bool Server::ListenForNewConnection()
@@ -62,6 +64,46 @@ bool Server::ListenForNewConnection()
 	}
 
 }
+//
+//void Server::ListenForNewConnectionThread()
+//{
+//	while (true)
+//	{
+//		for (int i = 0; i < 100; i++)
+//		{
+//			serverPtr->ListenForNewConnection();
+//		}
+//	}
+//}
+
+//void Server::ListenForNewConnection(Server& t_server)
+//{
+//	while (true)
+//	{
+//		//SOCKET newConnection; //Socket to hold the client's connection
+//		//serverPtr->GetInt(1, i);
+//		//serverPtr->connections[0] = new Connection();
+//		//serverPtr->newConnection = accept(s->sListen, NULL, NULL);
+//		int j;
+//		j = serverPtr->i;
+//		t_server.newConnection = accept(t_server.sListen, (SOCKADDR*)&(t_server.addr), &(t_server.addrlen)); //Accept a new connection
+//		if (serverPtr->newConnection == 0) //If accepting the client connection failed
+//		{
+//			std::cout << "Failed to accept the client's connection" << std::endl;
+//		}
+//		else
+//		{
+//			std::cout << "Client Connected! ID:" << serverPtr->ConnectionCounter << std::endl;
+//			serverPtr->connections[serverPtr->ConnectionCounter].socket = serverPtr->newConnection;
+//			CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandlerThread, (LPVOID)(serverPtr->ConnectionCounter), NULL, NULL); //Create Thread to handle this client. The index in the socket array for this thread is the value (i).
+//			std::string MOTD = "Welcome! This is the Message of the Day."; // Create buffer with message of the day
+//			serverPtr->SendString(serverPtr->ConnectionCounter, MOTD);
+//			serverPtr->SendID(serverPtr->ConnectionCounter, serverPtr->ConnectionCounter); //Send this player its ID
+//			serverPtr->ConnectionCounter++;
+//			serverPtr->newConnection = 0;
+//		}
+//	}
+//}
 
 
 bool Server::ProcessPacket(int ID, PacketType packetType)
@@ -81,6 +123,25 @@ bool Server::ProcessPacket(int ID, PacketType packetType)
 			SendString(i, message); //send message to connection i
 		}
 		std::cout << "Processed chat message packet from user ID: " << ID << std::endl;
+		break;
+	}
+	case PacketType::SetPosition:
+	{
+		int playerID; //store id of player to set pos
+		if (!GetInt(ID, playerID)) //Get chat id and store it in: id///////////////////////////////////////////////////////////
+			return false; //If we do not properly get the id, return false
+		float xPos;
+		float yPos;
+		if (!GetPosition(ID, xPos, yPos)) //Get chat id and store it in: id
+			return false; //If we do not properly get the id, return false
+		for (int i = 0; i < ConnectionCounter; i++) // Next we need to send message to each user
+		{
+			if (i == ID) //If connection is user who sent the message
+				continue; //Skip to the next user, don't send message back to whom sent it
+			//SendPacketType()
+			SendPosition(i,ID, xPos, yPos); //send message to connection i
+		}
+		std::cout << "Processed setPosition from user ID: " << ID << std::endl;
 		break;
 	}
 	default:
@@ -120,6 +181,6 @@ void Server::PacketSenderThread() //Thread for outgoing packets
 				delete p.buffer;
 			}
 		}
-		Sleep(5);
+		//Sleep(5);
 	}
 }

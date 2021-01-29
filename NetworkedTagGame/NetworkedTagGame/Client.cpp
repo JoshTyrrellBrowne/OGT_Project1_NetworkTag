@@ -62,14 +62,14 @@ bool Client::ProcessPacket(PacketType packetType)
 	case PacketType::SetPosition:
 	{
 		int ID; //store id of player to set pos
-		if (!GetInt(ID)) //Get chat id and store it in: id
+		if (!GetInt(ID)) //Get id of player to move
 			return false; //If we do not properly get the id, return false
 		sf::Vector2f pos; // the position
-		if (!GetPosition(pos)) //Get chat id and store it in: id
-			return false; //If we do not properly get the id, return false
-		m_gamePtr->setPosition(pos);
+		if (!GetPosition(pos)) //Get pos
+			return false; //If we do not properly get the pos, return false
+		m_gamePtr->setPosition(ID, pos);
+		break;
 	}
-
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;

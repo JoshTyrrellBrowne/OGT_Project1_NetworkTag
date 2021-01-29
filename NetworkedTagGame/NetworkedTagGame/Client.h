@@ -4,13 +4,15 @@
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #pragma comment(lib,"ws2_32.lib")
-#include "Game.h"
+#include <SFML/Graphics.hpp>
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
 #include <tchar.h>
 #include <string>
 #include <iostream>
 #include "PacketType.h"
+
+class Game;
 
 class Client
 {
@@ -19,7 +21,7 @@ public:
 	bool Connect();
 	bool CloseConnection();
 	bool SendString(std::string& string);
-private:
+
 	bool ProcessPacket(PacketType packetType);
 	static void ClientThread();
 
@@ -44,3 +46,4 @@ private:
 };
 
 static Client* clientptr;
+#include "Game.h"
