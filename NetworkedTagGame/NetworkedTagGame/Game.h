@@ -18,9 +18,9 @@ public:
 	void render(); //where we draw 
 	void setUpWithID(int t_ID); //this sets up player variables based on the passed ID
 	void setPosition(int t_id, sf::Vector2f t_pos);
-	void tagThisPlayer();
-	void tagEnemyPlayer(int t_IdToTag);
+	void tagPlayer(int idToTag);
 	void HandleControls();
+	void HandleCollisions();
 	static void ListenForNewConnectionThread(Server& t_server);
 
 private:
@@ -30,6 +30,8 @@ private:
 	Client* m_clientPtr;
 	Server* m_serverPtr;
 	int m_myPlayerID;
+	sf::Font font;
+	sf::Text m_playerText;
 	std::vector<Player> m_allPlayers;
 
 	sf::Event event;

@@ -8,9 +8,7 @@ Game::Game()
 	m_chooseScreen = new ChoosingScreen(*m_window);
 	m_clientPtr = nullptr; //null initially until player decides
 	m_serverPtr = nullptr;
-	//std::thread listenThread(ListenForNewConnectionThread, std::ref(serverPtr));
-	/*std::thread listenThread(ListenForNewConnectionThread, std::ref(*serverPtr));
-	listenThread.detach();*/
+	font.loadFromFile("Lato-Regular.ttf");
 }
 
 void Game::init(Client& t_client)
@@ -70,6 +68,8 @@ void Game::update()
 		break;
 	case GameState::Play:
 		HandleControls(); //check for key input and do actions
+		if (m_myPlayerID == 0)
+			HandleCollisions();
 		break;
 	default:
 		break;
@@ -90,6 +90,7 @@ void Game::render()
 		{
 			m_window->draw(player.getCircle());
 		}
+		m_window->draw(m_playerText);
 		break;
 	default:
 		break;
@@ -99,40 +100,41 @@ void Game::render()
 
 void Game::setUpWithID(int t_ID)
 {
-
-
+	m_myPlayerID = t_ID;
+	m_playerText.setFont(font);
+	m_playerText.setCharacterSize(20);
+	m_playerText.setString("You");
+	m_playerText.setFillColor(sf::Color::Blue);
+	//m_playerText.setOrigin(sf::Vector2f(m_playerText.getGlobalBounds().width / 2, m_playerText.getGlobalBounds().height / 2));
 	for (int i = 0; i < 3; i++)
 	{
 		Player p = *new Player();
 		p.setId(i);
-		p.setPosition(sf::Vector2f(200 * i, 200 * i));
-		m_allPlayers.push_back(p);
-		m_myPlayerID = t_ID;
-		/*if (i == t_ID)
+		switch (i)
 		{
-
-			m_player = &p;
-		}*/
+		case 0:
+			p.setPosition(sf::Vector2f(200, 200));
+			break;
+		case 1:
+			p.setPosition(sf::Vector2f(2800, 200));
+			break;
+		case 2:
+		{
+			p.setPosition(sf::Vector2f(1500, 1300));
+			break;
+		}
+		default:
+			break;
+		}
+		m_allPlayers.push_back(p);
 	}
-	//m_player.setId(t_ID);
-
-	//switch (t_ID)	
-	//{
-	//case 0: //Player 1 (host)
-	//	m_player.setColor(sf::Color::Green);
-	//	m_player.setPosition(sf::Vector2f(200,200));
-	//	break;
-	//case 1: //Player 2
-	//	m_player.setColor(sf::Color::Blue);
-	//	m_player.setPosition(sf::Vector2f(200, 200));
-	//	break;
-	//case 3: //Player 3
-	//	m_player.setColor(sf::Color::White);
-	//	m_player.setPosition(sf::Vector2f(200, 200));
-	//	break;
-	//default:
-	//	break;
-	//}
+	if (t_ID == 2)
+	{
+		//After 3rd player joins, tag random player
+		PacketStructs::TagPlayer tagRandomPlayer(rand() % 3);
+		Packet p = tagRandomPlayer.toPacket();
+		m_clientPtr->sendAll(p.buffer, p.size);
+	}
 }
 
 void Game::setPosition(int id, sf::Vector2f t_pos)
@@ -144,40 +146,24 @@ void Game::setPosition(int id, sf::Vector2f t_pos)
 			p.setPosition(t_pos);
 		}
 	}
-
-
-	//if (m_player->getID() == id) //check if for player
-	//{
-	//	m_player->setPosition(t_pos);
-	//	return;
-	//}
-	//for (Player enemy : m_allPlayers) // check enemies
-	//{
-	//	if (enemy.getID() == id)
-	//	{
-	//		enemy.setPosition(t_pos);
-	//	}
-	//}
 }
 
-void Game::tagThisPlayer()
+void Game::tagPlayer(int idToTag)
 {
+	for (Player& p : m_allPlayers)
+	{
+		if (p.getID() == idToTag)
+		{
+			p.tag();
+		}
+		else
+			p.unTag();
+	}
+
 	//m_player.tag();
 	//for (Player enemy : m_allPlayers) //untag enemies
 	//{
 	//	enemy.unTag();
-	//}
-}
-
-void Game::tagEnemyPlayer(int t_IdToTag)
-{
-	//m_player.unTag();
-	//for (Player enemy : m_allPlayers) //tag the tagged enemy, untag other
-	//{
-	//	if (enemy.getID() == t_IdToTag)
-	//		enemy.tag();
-	//	else
-	//		enemy.unTag();
 	//}
 }
 
@@ -201,7 +187,6 @@ void Game::HandleControls()
 						player.setPosition(player.getPosition() + sf::Vector2f(0, -10));
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
-						//m_clientPtr->SendPacketType(PacketType::SetPosition);
 						m_clientPtr->sendAll(p.buffer, p.size);
 					}
 				}
@@ -216,7 +201,6 @@ void Game::HandleControls()
 						player.setPosition(player.getPosition() + sf::Vector2f(0, 10));
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
-						//m_clientPtr->SendPacketType(PacketType::SetPosition);
 						m_clientPtr->sendAll(p.buffer, p.size);
 					}
 				}
@@ -230,7 +214,6 @@ void Game::HandleControls()
 						player.setPosition(player.getPosition() + sf::Vector2f(10, 0));
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
-						//m_clientPtr->SendPacketType(PacketType::SetPosition);
 						m_clientPtr->sendAll(p.buffer, p.size);
 					}
 				}
@@ -244,7 +227,35 @@ void Game::HandleControls()
 						player.setPosition(player.getPosition() + sf::Vector2f(-10, 0));
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
-						//m_clientPtr->SendPacketType(PacketType::SetPosition);
+						m_clientPtr->sendAll(p.buffer, p.size);
+					}
+				}
+			}
+		}
+	}
+	for (Player& player : m_allPlayers)
+	{
+		if (player.getID() == m_myPlayerID)
+		{
+			m_playerText.setPosition(player.getPosition());
+		}
+	}
+}
+
+void Game::HandleCollisions()
+{
+	for (Player& player : m_allPlayers)
+	{
+		if (player.isTagged)
+		{
+			for (Player& playerCheck : m_allPlayers)
+			{
+				if (playerCheck.getID() != player.getID())
+				{
+					if (playerCheck.getCircle().getGlobalBounds().intersects(player.getCircle().getGlobalBounds()))
+					{
+						PacketStructs::TagPlayer tagPlayer(playerCheck.getID());
+						Packet p = tagPlayer.toPacket();
 						m_clientPtr->sendAll(p.buffer, p.size);
 					}
 				}

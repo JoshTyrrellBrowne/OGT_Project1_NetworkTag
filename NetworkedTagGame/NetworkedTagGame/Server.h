@@ -13,6 +13,8 @@
 #include "PacketStructs.h"
 #include "PacketType.h"
 
+
+
 struct Connection
 {
 	SOCKET socket;
@@ -48,6 +50,7 @@ public:
 	bool GetFloat(int ID, float& t_float);
 	bool GetPosition(int ID, float& xPos, float& yPos);
 	void SendPosition(int ID, int playerID, float xPos, float yPos);
+	void SendTagPlayer(int ID, int playerID);
 
 private:
 	int i = 3;

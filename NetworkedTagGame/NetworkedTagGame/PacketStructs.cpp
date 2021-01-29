@@ -58,3 +58,21 @@ Packet PacketStructs::SetPosition::toPacket()
 	Packet packet(buffer, packetSize);
 	return packet;
 }
+
+PacketStructs::TagPlayer::TagPlayer(int t_id)
+{
+	m_id = t_id;
+}
+
+Packet PacketStructs::TagPlayer::toPacket()
+{
+	const int packetSize = sizeof(int) * 2; //calculate packet size (type,value)
+	char* buffer = new char[packetSize];
+	int packetType = htonl((int)PacketType::TagPlayer);
+	int id = htonl(m_id);
+	memcpy(buffer, &packetType, sizeof(int)); //copy packet type
+	memcpy(buffer + sizeof(int), &id, sizeof(int)); //copy packet size
+	//memcpy(buffer + sizeof(int) * 2, message.c_str(), message.size() * sizeof(char));
+	Packet packet(buffer, packetSize);
+	return packet;
+}

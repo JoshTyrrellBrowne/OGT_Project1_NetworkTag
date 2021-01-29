@@ -117,3 +117,9 @@ void Server::SendPosition(int ID,int playerID, float xPos, float yPos)
 	PacketStructs::SetPosition setPos(playerID, xPos, yPos);
 	connections[ID].packetManager.Append(setPos.toPacket());
 }
+
+void Server::SendTagPlayer(int ID, int playerID)
+{
+	PacketStructs::TagPlayer tagPlaya(playerID);
+	connections[ID].packetManager.Append(tagPlaya.toPacket());
+}

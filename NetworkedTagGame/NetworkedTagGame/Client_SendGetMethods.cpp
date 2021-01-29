@@ -51,6 +51,18 @@ bool Client::SendPacketType(PacketType t_packetType)
 	return true; //Return true: packettype successfully sent
 }
 
+bool Client::SendTagPlayer(int t_idToTag)
+{
+	if (!SendPacketType(PacketType::TagPlayer)) //Send Packet type: Chat Message
+		return false; //Return false: Failed to send string
+	PacketStructs::TagPlayer tagPlayer(t_idToTag);
+	Packet p = tagPlayer.toPacket();
+	sendAll(p.buffer, p.size);
+	//if (!SendInt(t_idToTag)) //Send length of string, if sending buffer length failed,
+	//	return false; //failed to send string buffer length, return false
+	return true;
+}
+
 bool Client::GetPacketType(PacketType& t_packetType)
 {
 	int packetType;

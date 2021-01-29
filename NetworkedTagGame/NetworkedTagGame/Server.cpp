@@ -144,6 +144,18 @@ bool Server::ProcessPacket(int ID, PacketType packetType)
 		std::cout << "Processed setPosition from user ID: " << ID << std::endl;
 		break;
 	}
+	case PacketType::TagPlayer:
+	{
+		int id; //id of player to tag
+		if (!GetInt(ID, id)) //Get the chat message and store it in variable
+			return false; //If we dont properly get the chat message, return false
+		for (int i = 0; i < ConnectionCounter; i++) // Next we need to send message to each user
+		{
+			SendTagPlayer(i, id); //send tag
+		}
+		std::cout << "Processed tag playa packet from user ID: " << ID << std::endl;
+		break;
+	}
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;

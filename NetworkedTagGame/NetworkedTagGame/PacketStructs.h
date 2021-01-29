@@ -34,4 +34,13 @@ namespace PacketStructs
 		float m_xPos; //the x coordinate
 		float m_yPos; //the y coordinate
 	};
+
+	class TagPlayer
+	{
+	public:
+		TagPlayer(int t_id);
+		Packet toPacket(); //converts Chat Message to Packet
+	private:
+		int m_id; //the id of player 
+	};
 }

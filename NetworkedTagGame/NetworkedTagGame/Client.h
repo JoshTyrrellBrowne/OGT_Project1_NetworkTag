@@ -29,6 +29,7 @@ public:
 	bool sendAll(char* data, int totalbytes);
 	bool SendInt(int t_int);
 	bool SendPacketType(PacketType packetType);
+	bool SendTagPlayer(int t_idToTag);
 
 	//Getting Functions
 	bool recieveAll(char* data, int totalbytes);

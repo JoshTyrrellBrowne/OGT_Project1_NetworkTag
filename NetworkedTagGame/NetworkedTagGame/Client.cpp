@@ -70,6 +70,12 @@ bool Client::ProcessPacket(PacketType packetType)
 		m_gamePtr->setPosition(ID, pos);
 		break;
 	}
+	case PacketType::TagPlayer:
+		int ID; //store id of player to tag
+		if (!GetInt(ID)) //Get id of player to tag
+			return false; //If we do not properly get the id, return false
+		m_gamePtr->tagPlayer(ID);
+		break;
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;
