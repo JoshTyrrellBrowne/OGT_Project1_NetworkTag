@@ -156,6 +156,15 @@ bool Server::ProcessPacket(int ID, PacketType packetType)
 		std::cout << "Processed tag playa packet from user ID: " << ID << std::endl;
 		break;
 	}
+	case PacketType::Reset:
+	{
+		for (int i = 0; i < ConnectionCounter; i++) // Next we need to send message to each user
+		{
+			SendPacketType(i, PacketType::Reset); //send tag
+		}
+		std::cout << "Processed reset from user ID: " << ID << std::endl;
+		break;
+	}
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;

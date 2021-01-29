@@ -76,6 +76,9 @@ bool Client::ProcessPacket(PacketType packetType)
 			return false; //If we do not properly get the id, return false
 		m_gamePtr->tagPlayer(ID);
 		break;
+	case PacketType::Reset:
+		m_gamePtr->reset();
+		break;
 	default:
 		std::cout << "Unrecognised packet: " << (int)packetType << std::endl;
 		break;

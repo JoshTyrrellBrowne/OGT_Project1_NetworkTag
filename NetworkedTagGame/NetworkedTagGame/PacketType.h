@@ -5,6 +5,7 @@ enum class PacketType
 	ChatMessage,
 	SetID,
 	SetPosition,
-	TagPlayer
+	TagPlayer,
+	Reset
 };
 

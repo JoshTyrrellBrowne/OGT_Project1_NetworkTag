@@ -9,6 +9,11 @@ Game::Game()
 	m_clientPtr = nullptr; //null initially until player decides
 	m_serverPtr = nullptr;
 	font.loadFromFile("Lato-Regular.ttf");
+	m_TagText.setFont(font);
+	m_TagText.setCharacterSize(50);
+	m_TagText.setFillColor(sf::Color::Green);
+	isFirstTag = false;
+	m_clock.restart();
 }
 
 void Game::init(Client& t_client)
@@ -67,10 +72,26 @@ void Game::update()
 		}
 		break;
 	case GameState::Play:
+	{
 		HandleControls(); //check for key input and do actions
 		if (m_myPlayerID == 0)
 			HandleCollisions();
 		break;
+	}
+	case GameState::Tag:
+	{
+		m_elapsedTime = m_clock.getElapsedTime().asSeconds();
+		if (m_elapsedTime > 5)
+		{
+			m_gameState = GameState::Reset;
+		}
+		break;
+	}
+	case GameState::Reset:
+	{
+		//reset
+		m_clientPtr->SendPacketType(PacketType::Reset);
+	}
 	default:
 		break;
 	}
@@ -85,13 +106,24 @@ void Game::render()
 		m_chooseScreen->render();
 		break;
 	case GameState::Play:
-		//m_window->draw(m_player.getCircle());
+	{
 		for (auto& player : m_allPlayers)
 		{
 			m_window->draw(player.getCircle());
 		}
 		m_window->draw(m_playerText);
 		break;
+	}
+	case GameState::Tag:
+	{
+		for (auto& player : m_allPlayers)
+		{
+			m_window->draw(player.getCircle());
+		}
+		m_window->draw(m_playerText);
+		m_window->draw(m_TagText);
+		break;
+	}
 	default:
 		break;
 	}
@@ -134,6 +166,7 @@ void Game::setUpWithID(int t_ID)
 		PacketStructs::TagPlayer tagRandomPlayer(rand() % 3);
 		Packet p = tagRandomPlayer.toPacket();
 		m_clientPtr->sendAll(p.buffer, p.size);
+		m_clock.restart();//restart clock
 	}
 }
 
@@ -159,12 +192,16 @@ void Game::tagPlayer(int idToTag)
 		else
 			p.unTag();
 	}
-
-	//m_player.tag();
-	//for (Player enemy : m_allPlayers) //untag enemies
-	//{
-	//	enemy.unTag();
-	//}
+	if (!isFirstTag)
+	{
+		isFirstTag = true;
+	}
+	else {
+		m_gameState = GameState::Tag;
+		m_elapsedTime = m_clock.getElapsedTime().asSeconds();
+		m_TagText.setString("Player: " + std::to_string(idToTag) + " lasted " + std::to_string(m_elapsedTime));
+		m_clock.restart(); //reset clock
+	}
 }
 
 void Game::HandleControls()
@@ -185,6 +222,7 @@ void Game::HandleControls()
 					if (player.getID() == m_myPlayerID)
 					{
 						player.setPosition(player.getPosition() + sf::Vector2f(0, -10));
+						BoundaryCheck();
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
 						m_clientPtr->sendAll(p.buffer, p.size);
@@ -199,6 +237,7 @@ void Game::HandleControls()
 					if (player.getID() == m_myPlayerID)
 					{
 						player.setPosition(player.getPosition() + sf::Vector2f(0, 10));
+						BoundaryCheck();
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
 						m_clientPtr->sendAll(p.buffer, p.size);
@@ -212,6 +251,7 @@ void Game::HandleControls()
 					if (player.getID() == m_myPlayerID)
 					{
 						player.setPosition(player.getPosition() + sf::Vector2f(10, 0));
+						BoundaryCheck();
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
 						m_clientPtr->sendAll(p.buffer, p.size);
@@ -225,6 +265,7 @@ void Game::HandleControls()
 					if (player.getID() == m_myPlayerID)
 					{
 						player.setPosition(player.getPosition() + sf::Vector2f(-10, 0));
+						BoundaryCheck();
 						PacketStructs::SetPosition setPosObj(player.getID(), player.getPosition().x, player.getPosition().y);
 						Packet p = setPosObj.toPacket();
 						m_clientPtr->sendAll(p.buffer, p.size);
@@ -269,5 +310,53 @@ void Game::ListenForNewConnectionThread(Server& t_server)
 	while (true) {
 		t_server.ListenForNewConnection();
 	}
+}
+
+void Game::BoundaryCheck()
+{
+	for (Player& player : m_allPlayers)
+	{
+		if (player.getPosition().x < 0) //left check
+		{
+			player.setPosition(sf::Vector2f(0, player.getPosition().y));
+		}
+		if (player.getPosition().x > 3000) //right check
+		{
+			player.setPosition(sf::Vector2f(3000, player.getPosition().y));
+		}
+		if (player.getPosition().y < 0) //right check
+		{
+			player.setPosition(sf::Vector2f(player.getPosition().x, 0));
+		}
+		if (player.getPosition().y > 1500) //right check
+		{
+			player.setPosition(sf::Vector2f(player.getPosition().x, 1500));
+		}
+	}
+}
+
+void Game::reset()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		switch (i)
+		{
+		case 0:
+			m_allPlayers.at(i).setPosition(sf::Vector2f(200, 200));
+			break;
+		case 1:
+			m_allPlayers.at(i).setPosition(sf::Vector2f(2800, 200));
+			break;
+		case 2:
+		{
+			m_allPlayers.at(i).setPosition(sf::Vector2f(1500, 1300));
+			break;
+		}
+		default:
+			break;
+		}
+	}
+	m_gameState = GameState::Play; //once reset, set to play, new game
+	m_clock.restart(); //reset clock
 }
 

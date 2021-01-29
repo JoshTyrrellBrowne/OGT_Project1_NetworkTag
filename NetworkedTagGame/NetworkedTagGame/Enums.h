@@ -4,7 +4,9 @@
 enum class GameState
 {
 	HostOrJoin,
-	Play
+	Play,
+	Tag,
+	Reset
 };
 
 enum class PlayerType
